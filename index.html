@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Moderna</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: background 0.5s ease;
+        }
+
+        .calculator {
+            width: 100%;
+            max-width: 380px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            padding: 30px;
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .calculator.scientific-mode {
+            max-width: 450px;
+        }
+
+        .display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background 0.3s ease;
+        }
+
+        .history {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: right;
+            min-height: 20px;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .result {
+            font-size: 36px;
+            color: white;
+            text-align: right;
+            border: none;
+            background: transparent;
+            width: 100%;
+            outline: none;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .buttons-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .calculator.scientific-mode .buttons-container {
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+
+        button {
+            height: 65px;
+            border: none;
+            border-radius: 15px;
+            font-size: 20px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .operator {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+
+        .operator:hover {
+            background: linear-gradient(135deg, #ff5252, #d32f2f);
+        }
+
+        .equals {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            grid-column: span 2;
+        }
+
+        .equals:hover {
+            background: linear-gradient(135deg, #26d0ce, #2e8b57);
+        }
+
+        .clear, .backspace {
+            background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+            color: #333;
+        }
+
+        .clear:hover, .backspace:hover {
+            background: linear-gradient(135deg, #ff8a95, #fbc2eb);
+        }
+
+        .number {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .number:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .mode-toggle {
+            width: 100%;
+            height: 55px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .mode-toggle:hover {
+            background: linear-gradient(135deg, #5a67d8, #6b46c1);
+        }
+
+        .scientific-buttons {
+            display: none;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .scientific-buttons.active {
+            display: grid;
+        }
+
+        .scientific-buttons button {
+            height: 50px;
+            font-size: 14px;
+            background: linear-gradient(135deg, #a8edea, #fed6e3);
+            color: #333;
+            font-weight: 600;
+        }
+
+        .scientific-buttons button:hover {
+            background: linear-gradient(135deg, #96e6fb, #fbb6ce);
+        }
+
+        .zero {
+            grid-column: span 2;
+        }
+
+        .calculator.scientific-mode .zero {
+            grid-column: span 1;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            box-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .calculator-title {
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            font-weight: 300;
+            margin-bottom: 25px;
+            letter-spacing: 2px;
+        }
+
+        .color-picker {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .color-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 10px;
+            transition: background 0.2s;
+        }
+
+        .color-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .color-preview {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .color-label {
+            color: white;
+            font-size: 14px;
+        }
+
+        .theme-selector {
+            position: relative;
+        }
+
+        .theme-button {
+            width: 100%;
+            height: 55px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .theme-button i {
+            transition: transform 0.3s;
+        }
+
+        .theme-button.active i {
+            transform: rotate(180deg);
+        }
+
+        .theme-dropdown {
+            display: none;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: -10px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .theme-dropdown.active {
+            display: block;
+        }
+
+        @media (max-width: 480px) {
+            .calculator {
+                padding: 20px;
+                max-width: 100%;
+            }
+            
+            .buttons-container {
+                gap: 10px;
+            }
+            
+            button {
+                height: 55px;
+                font-size: 18px;
+            }
+            
+            .result {
+                font-size: 28px;
+            }
+        }
+
+        /* Estilos para los temas */
+        .theme-blue {
+            --bg-primary: #667eea;
+            --bg-secondary: #764ba2;
+            --display-bg: rgba(0, 0, 0, 0.3);
+            --operator-bg: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            --equals-bg: linear-gradient(135deg, #4ecdc4, #44a08d);
+            --clear-bg: linear-gradient(135deg, #ff9a9e, #fad0c4);
+            --number-bg: rgba(255, 255, 255, 0.15);
+            --scientific-bg: linear-gradient(135deg, #a8edea, #fed6e3);
+            --mode-toggle-bg: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .theme-dark {
+            --bg-primary: #2c3e50;
+            --bg-secondary: #1a1a1a;
+            --display-bg: rgba(0, 0, 0, 0.5);
+            --operator-bg: linear-gradient(135deg, #3498db, #2980b9);
+            --equals-bg: linear-gradient(135deg, #2ecc71, #27ae60);
+            --clear-bg: linear-gradient(135deg, #e74c3c, #c0392b);
+            --number-bg: rgba(60, 60, 60, 0.8);
+            --scientific-bg: linear-gradient(135deg, #9b59b6, #8e44ad);
+            --mode-toggle-bg: linear-gradient(135deg, #2c3e50, #1a1a1a);
+        }
+
+        .theme-green {
+            --bg-primary: #38a169;
+            --bg-secondary: #2f855a;
+            --display-bg: rgba(0, 0, 0, 0.4);
+            --operator-bg: linear-gradient(135deg, #4299e1, #3182ce);
+            --equals-bg: linear-gradient(135deg, #48bb78, #38a169);
+            --clear-bg: linear-gradient(135deg, #f6ad55, #ed8936);
+            --number-bg: rgba(72, 187, 120, 0.2);
+            --scientific-bg: linear-gradient(135deg, #9ae6b4, #68d391);
+            --mode-toggle-bg: linear-gradient(135deg, #38a169, #2f855a);
+        }
+
+        .theme-purple {
+            --bg-primary: #9f7aea;
+            --bg-secondary: #805ad5;
+            --display-bg: rgba(0, 0, 0, 0.4);
+            --operator-bg: linear-gradient(135deg, #ed64a6, #d53f8c);
+            --equals-bg: linear-gradient(135deg, #9f7aea, #805ad5);
+            --clear-bg: linear-gradient(135deg, #f687b3, #ed64a6);
+            --number-bg: rgba(159, 122, 234, 0.2);
+            --scientific-bg: linear-gradient(135deg, #d6bcfa, #b794f4);
+            --mode-toggle-bg: linear-gradient(135deg, #9f7aea, #805ad5);
+        }
+
+        .theme-red {
+            --bg-primary: #e53e3e;
+            --bg-secondary: #c53030;
+            --display-bg: rgba(0, 0, 0, 0.4);
+            --operator-bg: linear-gradient(135deg, #f6ad55, #ed8936);
+            --equals-bg: linear-gradient(135deg, #e53e3e, #c53030);
+            --clear-bg: linear-gradient(135deg, #f687b3, #ed64a6);
+            --number-bg: rgba(245, 101, 101, 0.2);
+            --scientific-bg: linear-gradient(135deg, #feb2b2, #fc8181);
+            --mode-toggle-bg: linear-gradient(135deg, #e53e3e, #c53030);
+        }
+    </style>
+</head>
+<body class="theme-blue">
+    <div class="calculator">
+        <div class="status-indicator"></div>
+        <h1 class="calculator-title">CALCULADORA</h1>
+        
+        <div class="theme-selector">
+            <button class="theme-button" onclick="toggleThemeDropdown()">
+                Cambiar tema <i>▼</i>
+            </button>
+            <div class="theme-dropdown" id="theme-dropdown">
+                <div class="color-option" onclick="changeTheme('theme-blue')">
+                    <div class="color-preview" style="background: linear-gradient(135deg, #667eea, #764ba2);"></div>
+                    <span class="color-label">Azul</span>
+                </div>
+                <div class="color-option" onclick="changeTheme('theme-dark')">
+                    <div class="color-preview" style="background: linear-gradient(135deg, #2c3e50, #1a1a1a);"></div>
+                    <span class="color-label">Oscuro</span>
+                </div>
+                <div class="color-option" onclick="changeTheme('theme-green')">
+                    <div class="color-preview" style="background: linear-gradient(135deg, #38a169, #2f855a);"></div>
+                    <span class="color-label">Verde</span>
+                </div>
+                <div class="color-option" onclick="changeTheme('theme-purple')">
+                    <div class="color-preview" style="background: linear-gradient(135deg, #9f7aea, #805ad5);"></div>
+                    <span class="color-label">Morado</span>
+                </div>
+                <div class="color-option" onclick="changeTheme('theme-red')">
+                    <div class="color-preview" style="background: linear-gradient(135deg, #e53e3e, #c53030);"></div>
+                    <span class="color-label">Rojo</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="display">
+            <div class="history" id="history"></div>
+            <input type="text" class="result" id="result" readonly>
+        </div>
+
+        <button class="mode-toggle" onclick="toggleScientificMode()">
+            <span id="mode-text">Modo Científico</span>
+        </button>
+
+        <div class="buttons-container">
+            <button class="clear" onclick="clearDisplay()">C</button>
+            <button class="backspace" onclick="backspace()">⌫</button>
+            <button class="operator" onclick="appendToDisplay('%')">%</button>
+            <button class="operator" onclick="appendToDisplay('/')">/</button>
+            
+            <button class="number" onclick="appendToDisplay('7')">7</button>
+            <button class="number" onclick="appendToDisplay('8')">8</button>
+            <button class="number" onclick="appendToDisplay('9')">9</button>
+            <button class="operator" onclick="appendToDisplay('*')">×</button>
+            
+            <button class="number" onclick="appendToDisplay('4')">4</button>
+            <button class="number" onclick="appendToDisplay('5')">5</button>
+            <button class="number" onclick="appendToDisplay('6')">6</button>
+            <button class="operator" onclick="appendToDisplay('-')">−</button>
+            
+            <button class="number" onclick="appendToDisplay('1')">1</button>
+            <button class="number" onclick="appendToDisplay('2')">2</button>
+            <button class="number" onclick="appendToDisplay('3')">3</button>
+            <button class="operator" onclick="appendToDisplay('+')">+</button>
+            
+            <button class="number zero" onclick="appendToDisplay('0')">0</button>
+            <button class="number" onclick="appendToDisplay('.')">.</button>
+            <button class="equals" onclick="calculate()">=</button>
+        </div>
+
+        <div class="scientific-buttons" id="scientific-buttons">
+            <button onclick="scientificFunction('sin')">sin</button>
+            <button onclick="scientificFunction('cos')">cos</button>
+            <button onclick="scientificFunction('tan')">tan</button>
+            <button onclick="scientificFunction('sqrt')">√</button>
+            <button onclick="scientificFunction('pow')">x^y</button>
+            
+            <button onclick="scientificFunction('log')">log</button>
+            <button onclick="scientificFunction('ln')">ln</button>
+            <button onclick="scientificFunction('pi')">π</button>
+            <button onclick="scientificFunction('e')">e</button>
+            <button onclick="scientificFunction('fact')">n!</button>
+            
+            <button onclick="appendToDisplay('(')">(</button>
+            <button onclick="appendToDisplay(')')">)</button>
+            <button onclick="scientificFunction('exp')">exp</button>
+            <button onclick="scientificFunction('abs')">|x|</button>
+            <button onclick="scientificFunction('rand')">Rand</button>
+        </div>
+    </div>
+
+    <script>
+        let currentDisplay = '0';
+        let historyDisplay = '';
+        let scientificMode = false;
+        let waitingForOperand = false;
+        let pendingOperation = null;
+
+        function updateDisplay() {
+            const resultElement = document.getElementById('result');
+            const historyElement = document.getElementById('history');
+            
+            resultElement.value = currentDisplay;
+            historyElement.textContent = historyDisplay;
+            
+            // Ajustar el tamaño de fuente según la longitud
+            if (currentDisplay.length > 10) {
+                resultElement.style.fontSize = '24px';
+            } else if (currentDisplay.length > 8) {
+                resultElement.style.fontSize = '28px';
+            } else {
+                resultElement.style.fontSize = '36px';
+            }
+        }
+
+        function appendToDisplay(value) {
+            if (waitingForOperand) {
+                currentDisplay = value;
+                waitingForOperand = false;
+            } else {
+                if (currentDisplay === '0' && value !== '.') {
+                    currentDisplay = value;
+                } else {
+                    currentDisplay += value;
+                }
+            }
+            updateDisplay();
+        }
+
+        function clearDisplay() {
+            currentDisplay = '0';
+            historyDisplay = '';
+            waitingForOperand = false;
+            pendingOperation = null;
+            updateDisplay();
+        }
+
+        function backspace() {
+            if (currentDisplay.length === 1) {
+                currentDisplay = '0';
+            } else {
+                currentDisplay = currentDisplay.slice(0, -1);
+            }
+            updateDisplay();
+        }
+
+        function calculate() {
+            try {
+                // Reemplazar símbolos de visualización con operadores JavaScript
+                let expression = currentDisplay
+                    .replace(/×/g, '*')
+                    .replace(/−/g, '-')
+                    .replace(/÷/g, '/');
+                
+                historyDisplay = currentDisplay + ' =';
+                
+                // Evaluar la expresión
+                const result = Function('"use strict"; return (' + expression + ')')();
+                
+                currentDisplay = parseFloat(result.toFixed(10)).toString();
+                waitingForOperand = true;
+                updateDisplay();
+            } catch (error) {
+                currentDisplay = 'Error';
+                historyDisplay = 'Error de cálculo';
+                updateDisplay();
+                setTimeout(() => {
+                    clearDisplay();
+                }, 2000);
+            }
+        }
+
+        function toggleScientificMode() {
+            scientificMode = !scientificMode;
+            const calculator = document.querySelector('.calculator');
+            const scientificButtons = document.getElementById('scientific-buttons');
+            const modeText = document.getElementById('mode-text');
+            
+            if (scientificMode) {
+                calculator.classList.add('scientific-mode');
+                scientificButtons.classList.add('active');
+                modeText.textContent = 'Modo Normal';
+            } else {
+                calculator.classList.remove('scientific-mode');
+                scientificButtons.classList.remove('active');
+                modeText.textContent = 'Modo Científico';
+            }
+        }
+
+        function scientificFunction(func) {
+            let result;
+            const currentValue = parseFloat(currentDisplay);
+            
+            if (isNaN(currentValue) && func !== 'pi' && func !== 'e' && func !== 'rand') {
+                currentDisplay = 'Error';
+                updateDisplay();
+                return;
+            }
+            
+            switch(func) {
+                case 'sin':
+                    result = Math.sin(currentValue);
+                    historyDisplay = `sin(${currentValue})`;
+                    break;
+                case 'cos':
+                    result = Math.cos(currentValue);
+                    historyDisplay = `cos(${currentValue})`;
+                    break;
+                case 'tan':
+                    result = Math.tan(currentValue);
+                    historyDisplay = `tan(${currentValue})`;
+                    break;
+                case 'sqrt':
+                    result = Math.sqrt(currentValue);
+                    historyDisplay = `√(${currentValue})`;
+                    break;
+                case 'pow':
+                    historyDisplay = `${currentValue}^`;
+                    waitingForOperand = true;
+                    pendingOperation = 'pow';
+                    updateDisplay();
+                    return;
+                case 'log':
+                    result = Math.log10(currentValue);
+                    historyDisplay = `log(${currentValue})`;
+                    break;
+                case 'ln':
+                    result = Math.log(currentValue);
+                    historyDisplay = `ln(${currentValue})`;
+                    break;
+                case 'pi':
+                    result = Math.PI;
+                    historyDisplay = 'π';
+                    break;
+                case 'e':
+                    result = Math.E;
+                    historyDisplay = 'e';
+                    break;
+                case 'fact':
+                    result = factorial(currentValue);
+                    historyDisplay = `${currentValue}!`;
+                    break;
+                case 'exp':
+                    result = Math.exp(currentValue);
+                    historyDisplay = `exp(${currentValue})`;
+                    break;
+                case 'abs':
+                    result = Math.abs(currentValue);
+                    historyDisplay = `|${currentValue}|`;
+                    break;
+                case 'rand':
+                    result = Math.random();
+                    historyDisplay = 'rand()';
+                    break;
+                default:
+                    return;
+            }
+            
+            currentDisplay = parseFloat(result.toFixed(10)).toString();
+            waitingForOperand = true;
+            updateDisplay();
+        }
+
+        function factorial(n) {
+            if (n < 0) return NaN;
+            if (n === 0 || n === 1) return 1;
+            if (n > 170) return Infinity; // Evitar overflow
+            
+            let result = 1;
+            for (let i = 2; i <= n; i++) {
+                result *= i;
+            }
+            return result;
+        }
+
+        // Función para cambiar el tema
+        function changeTheme(themeName) {
+            document.body.className = themeName;
+            applyThemeStyles();
+            toggleThemeDropdown();
+        }
+
+        // Función para aplicar los estilos del tema
+        function applyThemeStyles() {
+            const body = document.body;
+            
+            // Aplicar estilos del tema
+            document.documentElement.style.setProperty('--bg-primary', getComputedStyle(body).getPropertyValue('--bg-primary'));
+            document.documentElement.style.setProperty('--bg-secondary', getComputedStyle(body).getPropertyValue('--bg-secondary'));
+            
+            // Actualizar los estilos de los elementos
+            document.body.style.background = `linear-gradient(135deg, var(--bg-primary), var(--bg-secondary))`;
+            
+            const calculator = document.querySelector('.calculator');
+            const display = document.querySelector('.display');
+            const operators = document.querySelectorAll('.operator');
+            const equals = document.querySelectorAll('.equals');
+            const clears = document.querySelectorAll('.clear, .backspace');
+            const numbers = document.querySelectorAll('.number');
+            const scientificBtns = document.querySelectorAll('.scientific-buttons button');
+            const modeToggle = document.querySelector('.mode-toggle');
+            
+            // Aplicar estilos a cada elemento
+            if (calculator) {
+                calculator.style.background = `rgba(255, 255, 255, 0.1)`;
+            }
+            
+            if (display) {
+                display.style.background = `var(--display-bg)`;
+            }
+            
+            operators.forEach(btn => {
+                btn.style.background = `var(--operator-bg)`;
+            });
+            
+            equals.forEach(btn => {
+                btn.style.background = `var(--equals-bg)`;
+            });
+            
+            clears.forEach(btn => {
+                btn.style.background = `var(--clear-bg)`;
+            });
+            
+            numbers.forEach(btn => {
+                btn.style.background = `var(--number-bg)`;
+            });
+            
+            scientificBtns.forEach(btn => {
+                btn.style.background = `var(--scientific-bg)`;
+            });
+            
+            if (modeToggle) {
+                modeToggle.style.background = `var(--mode-toggle-bg)`;
+            }
+        }
+
+        // Función para mostrar/ocultar el menú de temas
+        function toggleThemeDropdown() {
+            const dropdown = document.getElementById('theme-dropdown');
+            const button = document.querySelector('.theme-button');
+            
+            dropdown.classList.toggle('active');
+            button.classList.toggle('active');
+        }
+
+        // Cerrar el menú de temas al hacer clic fuera
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('theme-dropdown');
+            const button = document.querySelector('.theme-button');
+            
+            if (!event.target.closest('.theme-selector') && dropdown.classList.contains('active')) {
+                dropdown.classList.remove('active');
+                button.classList.remove('active');
+            }
+        });
+
+        // Soporte para teclado
+        document.addEventListener('keydown', function(event) {
+            event.preventDefault();
+            
+            const key = event.key;
+            
+            if (key >= '0' && key <= '9') {
+                appendToDisplay(key);
+            } else if (key === '.') {
+                appendToDisplay('.');
+            } else if (key === '+') {
+                appendToDisplay('+');
+            } else if (key === '-') {
+                appendToDisplay('−');
+            } else if (key === '*') {
+                appendToDisplay('×');
+            } else if (key === '/') {
+                appendToDisplay('/');
+            } else if (key === '%') {
+                appendToDisplay('%');
+            } else if (key === 'Enter' || key === '=') {
+                calculate();
+            } else if (key === 'Escape' || key === 'c' || key === 'C') {
+                clearDisplay();
+            } else if (key === 'Backspace') {
+                backspace();
+            }
+        });
+
+        // Inicialización
+        updateDisplay();
+        applyThemeStyles();
+    </script>
+</body>
+</html>
